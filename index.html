@@ -1,0 +1,388 @@
+
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game Gắp Bóng Gọi Tên</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden; /* Chặn cuộn trang */
+            font-family: Arial, sans-serif;
+        }
+
+        /* KHUNG CHÍNH */
+        #game-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            background-image: url('https://raw.githubusercontent.com/Sen-Da-Tro-Giang/gapbonggoiten/main/B1.png');
+            background-size: cover;
+            background-position: center;
+            cursor: pointer; /* Con trỏ tay */
+            user-select: none; /* Không cho bôi đen */
+        }
+
+        /* --- NÚT MỞ MENU (Hình tròn) --- */
+        #toggle-btn {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 101; /* Cao hơn tất cả để bấm được */
+            width: 50px;
+            height: 50px;
+            background: #fff;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            cursor: pointer;
+            transition: transform 0.2s;
+            border: 2px solid #ddd;
+        }
+        #toggle-btn:hover {
+            transform: scale(1.1);
+            background: #f9f9f9;
+        }
+
+        /* --- KHUNG NHẬP LIỆU (Ẩn mặc định) --- */
+        #input-area {
+            position: absolute;
+            top: 80px; /* Nằm dưới nút tròn */
+            left: 20px;
+            z-index: 101;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 15px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            width: 250px;
+            transform-origin: top left;
+            transition: all 0.3s ease;
+            cursor: default;
+        }
+
+        /* Class để ẩn menu */
+        #input-area.hidden {
+            opacity: 0;
+            transform: scale(0);
+            pointer-events: none;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 5px;
+        }
+        .label { font-weight: bold; color: #333; }
+        
+        #close-btn {
+            cursor: pointer;
+            font-size: 16px;
+            padding: 2px 6px;
+            color: #ff4444;
+        }
+        #close-btn:hover { background: #fee; border-radius: 4px; }
+
+        textarea {
+            width: 100%;
+            height: 150px;
+            resize: none;
+            border: 1px solid #ccc;
+            padding: 8px;
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+            margin-bottom: 8px;
+        }
+
+        .credit {
+            font-size: 11px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 5px;
+            color: #666;
+        }
+
+        /* --- TAY GẮP (A1) --- */
+        #claw-machine {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            width: 140px; /* Kích thước tay gắp */
+            height: auto;
+            z-index: 5; /* Nằm sau tiền cảnh nhưng trước hậu cảnh */
+            transform: translateX(-50%);
+            transition: top 1s ease-in-out;
+            pointer-events: none; /* Để chuột xuyên qua */
+        }
+        
+        #claw-img { width: 100%; display: block; }
+
+        /* Dây treo */
+        #claw-rope {
+            position: absolute;
+            bottom: 95%;
+            left: 50%;
+            width: 6px;
+            height: 100vh;
+            background-color: #333;
+            transform: translateX(-50%);
+        }
+
+        /* --- BÓNG VÀ TÊN (A2) --- */
+        #ball-container {
+            position: absolute;
+            top: 75%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 170px;
+            height: 210px;
+            display: none; /* Ẩn ban đầu */
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+        
+        #ball-img {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+        #student-name {
+    /* --- Phần Vị trí (giữ nguyên hoặc chỉnh top theo ý bạn) --- */
+    position: relative;
+    top: 120px; 
+    z-index: 2;
+
+    /* --- Phần Tạo Khung Nền (Mới) --- */
+    background-color: rgba(255, 235, 59, 0.7); /* Màu vàng, độ trong suốt 0.7 */
+    border-radius: 15px;       /* Bo tròn các góc */
+    border: 2px solid #fff;    /* (Tùy chọn) Thêm viền trắng mỏng cho nổi bật */
+    box-shadow: 0 4px 6px rgba(0,0,0,0.2); /* Tạo bóng nhẹ cho khung */
+
+    /* --- Phần Kích thước & Hiển thị (Quan trọng để khung nhỏ lại) --- */
+    width: auto;               /* Tự động co giãn theo độ dài tên, bỏ 70% cũ đi */
+    display: inline-block;     /* Giúp khung bó sát vào nội dung chữ */
+    padding: 5px 15px;         /* Khoảng cách từ chữ ra mép khung */
+    
+    /* --- Phần Chữ --- */
+    color: #000;
+    font-weight: bold;
+    font-size: 25px;           /* Giảm size chữ 1 xíu cho vừa khung */
+    text-shadow: none;         /* Bỏ bóng chữ cũ đi cho đỡ rối mắt trên nền vàng */
+    line-height: 1.3;
+}
+
+        /* --- TIỀN CẢNH (B2) FULL MÀN HÌNH --- */
+        #foreground {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10; /* Đè lên tay gắp */
+            pointer-events: none; /* QUAN TRỌNG: Cho phép click xuyên qua ảnh này */
+        }
+        #foreground img {
+            width: 100%;
+            height: 100%;
+            object-fit: fill; /* Kéo dãn ảnh phủ kín khung */
+            display: block;
+        }
+
+    </style>
+</head>
+<body>
+
+<audio id="bg-music" src="nhac.mp3" loop></audio>
+<audio id="sfx-yeah" src="https://raw.githubusercontent.com/Sen-Da-Tro-Giang/gapbonggoiten/main/yeah.mp3"></audio>
+
+<div id="game-container">
+    
+    <div id="toggle-btn" title="Nhập danh sách học sinh">
+        ✏️
+    </div>
+
+    <div id="input-area" class="hidden">
+        <div class="header">
+            <span class="label">Danh sách HS</span>
+            <span id="close-btn" title="Đóng">❌</span>
+        </div>
+        
+        <textarea id="name-list" placeholder="Nhập tên học sinh, mỗi tên một dòng...">Nguyễn Văn A&#10;Trần Thị B&#10;Lê Văn C&#10;Phạm Văn D</textarea>
+        
+        <div class="credit">
+            <span>Sen Đá Trợ Giảng</span>
+            <a href="https://www.facebook.com/SenDaTroGiang?locale=vi_VN" target="_blank">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/1/1b/Facebook_icon.svg" style="width: 14px; height: 14px;">
+            </a>
+        </div>
+    </div>
+
+    <div id="claw-machine">
+        <div id="claw-rope"></div>
+        <img src="A1.png" id="claw-img" alt="Tay gắp">
+        
+        <div id="ball-container">
+            <img src="A2.png" id="ball-img" alt="Bóng">
+            <div id="student-name">Tên HS</div>
+        </div>
+    </div>
+
+    <div id="foreground">
+        <img src="B2.png" alt="Khung trước">
+    </div>
+
+</div>
+
+<script>
+    const gameContainer = document.getElementById('game-container');
+    const clawMachine = document.getElementById('claw-machine');
+    const ballContainer = document.getElementById('ball-container');
+    const studentNameDisplay = document.getElementById('student-name');
+    const nameListInput = document.getElementById('name-list');
+    
+    // Các biến cho Menu
+    const toggleBtn = document.getElementById('toggle-btn');
+    const inputArea = document.getElementById('input-area');
+    const closeBtn = document.getElementById('close-btn');
+
+    // Âm thanh
+    const bgMusic = document.getElementById('bg-music');
+    const sfxYeah = document.getElementById('sfx-yeah');
+
+    let isAnimating = false; 
+    let hasPrize = false;    
+
+    // --- CẤU HÌNH LƯU TRỮ ---
+    // 1. Khi mở trang: Lấy danh sách gốc từ bộ nhớ ra (nếu có)
+    const savedList = localStorage.getItem('clawMachine_StudentList_Master');
+    if (savedList) {
+        nameListInput.value = savedList;
+    }
+
+    // 2. Chỉ khi người dùng TỰ TAY GÕ phím thì mới lưu vào bộ nhớ
+    nameListInput.addEventListener('input', function() {
+        localStorage.setItem('clawMachine_StudentList_Master', nameListInput.value);
+    });
+    // ---------------------------------------------
+
+    // --- XỬ LÝ MENU ẨN HIỆN ---
+    toggleBtn.addEventListener('mousedown', (e) => {
+        e.stopPropagation(); 
+        inputArea.classList.toggle('hidden');
+    });
+
+    closeBtn.addEventListener('mousedown', (e) => {
+        e.stopPropagation();
+        inputArea.classList.add('hidden');
+    });
+
+    inputArea.addEventListener('mousedown', (e) => {
+        e.stopPropagation();
+    });
+
+    // --- LOGIC GAME ---
+
+    // 1. Di chuyển tay gắp
+    gameContainer.addEventListener('mousemove', (e) => {
+        if (!isAnimating) {
+            let x = e.clientX;
+            let maxX = window.innerWidth - 70; 
+            let minX = 70;
+            
+            if (x < minX) x = minX;
+            if (x > maxX) x = maxX;
+
+            clawMachine.style.left = x + 'px';
+        }
+    });
+
+    // 2. Click để chơi
+    gameContainer.addEventListener('mousedown', (e) => {
+        if (bgMusic.paused) {
+            bgMusic.volume = 0.5;
+            bgMusic.play().catch(err => console.log("Chặn autoplay: ", err));
+        }
+
+        if (hasPrize) {
+            clearPrize();
+        } else if (!isAnimating) {
+            performGrab();
+        }
+    });
+
+    function performGrab() {
+        let rawText = nameListInput.value;
+        let students = rawText.split('\n').filter(name => name.trim() !== '');
+
+        if (students.length === 0) {
+            alert("Đã gắp hết tên hoặc chưa nhập danh sách! Hãy tải lại trang để lấy lại danh sách gốc.");
+            inputArea.classList.remove('hidden');
+            return;
+        }
+
+        isAnimating = true;
+
+        let dropHeight = window.innerHeight - 250; 
+        clawMachine.style.top = dropHeight + 'px';
+
+        setTimeout(() => {
+            let randomIndex = Math.floor(Math.random() * students.length);
+            let selectedName = students[randomIndex];
+
+            studentNameDisplay.innerText = selectedName;
+            ballContainer.style.display = 'flex';
+            
+            sfxYeah.currentTime = 0;
+            sfxYeah.play();
+
+            clawMachine.style.top = '-120px';
+
+            setTimeout(() => {
+                isAnimating = false;
+                hasPrize = true;
+            }, 1000);
+
+        }, 1000);
+    }
+
+    function clearPrize() {
+        // Xóa tên trên màn hình hiện tại để không gắp trùng
+        let rawText = nameListInput.value;
+        let students = rawText.split('\n').filter(name => name.trim() !== '');
+        
+        let nameToRemove = studentNameDisplay.innerText;
+        let indexToRemove = students.indexOf(nameToRemove);
+        
+        if (indexToRemove > -1) {
+            students.splice(indexToRemove, 1);
+        }
+
+        // Cập nhật lại danh sách trên màn hình
+        nameListInput.value = students.join('\n');
+
+        // QUAN TRỌNG: Ở đây tôi ĐÃ XÓA dòng lệnh lưu vào localStorage.
+        // Nghĩa là việc xóa tên này chỉ diễn ra tạm thời, không ảnh hưởng đến danh sách gốc đã lưu.
+
+        ballContainer.style.display = 'none';
+        hasPrize = false;
+    }
+</script>
+
+</body>
+</html>
